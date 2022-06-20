@@ -1,0 +1,72 @@
+---
+title: "Overall Data Structure"
+format: html
+---
+
+```{r, echo=FALSE, message=FALSE}
+library(dplyr)
+
+# Read in data 
+Serengeti <- read.csv("S1-11_filtered.csv")
+
+# Generate master species list
+speciesList <- as.list(Serengeti %>% distinct(Species))
+
+# Select cam specific data from and filter to 1 row per camera, discard observation data
+camData_distinct <- Serengeti %>% distinct(Camera.Site, .keep_all = TRUE)     
+camData <- select(camData_distinct, Camera.Site:Camera.Mount)
+
+ojs_define(serengeti = Serengeti, speciesList = speciesList)
+```
+
+```{ojs}
+//| code-fold: true
+
+import { aq, op } from '@uwdata/arquero'
+species_filt = aq.table(serengeti)
+  .filter(aq.escape(r => op.includes(SpeciesInput, r.Species)))
+  .reify()
+```
+
+::: panel-tabset
+
+## Obs. by Species
+
+```{ojs}
+//| code-fold: true
+
+spec_counts = species_filt
+  .groupby("Species")
+  .rollup({
+    count: d => op.count()
+  })
+  .orderby('Species')
+
+Plot.plot({
+  marks: [
+    Plot.barY(spec_counts, {x: "Species", y: "count"})
+  ],
+  width: 786,
+  marginLeft: 75,
+  marginBottom: 100, 
+  x: { tickRotate: 90 }
+})
+```
+
+## Obs. by Camera
+
+## Obs. by Location
+
+:::
+
+```{ojs, echo = FALSE}
+//| code-fold: true
+
+// Create checkbox of species
+viewof SpeciesInput = Inputs.checkbox(
+  speciesList["Species"].sort(),
+  { value: speciesList["Species"].sort(),
+    label: "Species to include:"
+  }
+)
+```
