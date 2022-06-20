@@ -1,0 +1,106 @@
+---
+title: "Quarto example"
+format: 
+  html: 
+    page-layout: full
+---
+
+# HTMLWidgets
+
+## Leaflet
+
+```{r}
+library(leaflet)
+
+m <- leaflet() %>%
+  addTiles() %>%  # Add default OpenStreetMap map tiles
+  addMarkers(lng=174.768, lat=-36.852, popup="The birthplace of R")
+m  # Print the map
+```
+
+## DataTable
+
+```{r, message=F}
+library(DT)
+library(dplyr)
+penguins = read.csv("https://raw.githubusercontent.com/allisonhorst/palmerpenguins/master/inst/extdata/penguins.csv") %>%
+  mutate(species = as.factor(species),
+         island = as.factor(island),
+         sex = as.factor(sex))
+datatable(penguins, filter = "top")
+```
+
+```{ojs}
+//| echo: false
+//| output: false
+$('#DataTables_Table_0').on("search.dt", function() { 
+  console.log($(this).DataTable().rows( { filter : 'applied'} ).nodes().length);
+});
+
+data = FileAttachment("https://raw.githubusercontent.com/allisonhorst/palmerpenguins/master/inst/extdata/penguins.csv").csv({typed: true})
+```
+
+# ObservableJS
+
+This piece of code implements the data filtering based on the input selectors below. `bill_length_min` (slider) and `islands` (checkboxes) are inputs initialized in the code chunk after this one.
+
+```{ojs}
+filtered = data.filter(function(penguin) {
+  return bill_length_min < penguin.bill_length_mm &&
+         islands.includes(penguin.island);
+})
+```
+
+Interestingly, previous code chunks can use variables created in future code chunks with `ojs` chunks since code is executed non-linearly.
+
+```{ojs}
+//| code-fold: true
+//| panel: sidebar
+
+// Create slider
+viewof bill_length_min = Inputs.range(
+  [32, 50], 
+  {value: 35, step: 1, label: "Bill length (min):"}
+)
+
+// Create checkboxes
+viewof islands = Inputs.checkbox(
+  ["Torgersen", "Biscoe", "Dream"], 
+  { value: ["Torgersen", "Biscoe"], 
+    label: "Islands:"
+  }
+)
+```
+
+::: panel-tabset
+## Observable Plot
+
+```{ojs}
+//| code-fold: true
+
+Plot.rectY(filtered, 
+  Plot.binX(
+    {y: "count"}, 
+    {x: "body_mass_g", fill: "species", thresholds: 20}
+  ))
+  .plot({
+    facet: {
+      data: filtered,
+      x: "sex",
+      y: "species",
+      marginRight: 80
+    },
+    marks: [
+      Plot.frame(),
+    ]
+  }
+)
+```
+
+## Data
+
+```{ojs}
+//| code-fold: true
+Inputs.table(filtered)
+```
+:::
