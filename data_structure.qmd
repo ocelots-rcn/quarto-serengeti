@@ -1,6 +1,8 @@
 ---
 title: "Overall Data Structure"
-format: html
+format: 
+  html:
+    standalone: true
 ---
 
 ```{r, echo=FALSE, message=FALSE}
@@ -16,7 +18,7 @@ speciesList <- as.list(Serengeti %>% distinct(Species))
 camData_distinct <- Serengeti %>% distinct(Camera.Site, .keep_all = TRUE)     
 camData <- select(camData_distinct, Camera.Site:Camera.Mount)
 
-ojs_define(serengeti = Serengeti, speciesList = speciesList)
+ojs_define(serengeti = Serengeti, speciesList = speciesList, camData = camData)
 ```
 
 ```{ojs}
@@ -55,7 +57,56 @@ Plot.plot({
 
 ## Obs. by Camera
 
+```{ojs}
+//| code-fold: true
+
+cam_counts = species_filt
+  .groupby("Camera.Site")
+  .rollup({
+    Freq: d => op.count()
+  })
+
+Plot.plot({
+  x: { label: "Number of Images Captured", domain: [0, 4700] },
+  y: { label: "Number of Camera Sites", domain: [0, 50] },
+  marks: [
+    Plot.rectY(cam_counts, 
+      Plot.binX({y: "count"}, {x: {thresholds: 30, value: "Freq"}})
+    )
+  ],
+  width: 786,
+  marginLeft: 75
+})
+```
+
 ## Obs. by Location
+
+```{ojs}
+//| code-fold: true
+
+ll_counts = species_filt
+  .groupby("Camera.Site")
+  .rollup({
+    Freq: d => op.count()
+  })
+  .join_left(aq.table(camData))
+
+Plot.plot({
+  x: {
+    label: "Longitude (m)",
+    domain: [690000, 745000]
+  },
+  y: {
+    label: "Latitude (m)",
+    domain: [9706000, 9738000]
+  },
+  marks: [
+    Plot.dot(ll_counts, {x: "Longitude..m.", y: "Latitude..m.", r: d => d.Freq/5000})
+  ],
+  width: 786,
+  marginLeft: 75
+})
+```
 
 :::
 
